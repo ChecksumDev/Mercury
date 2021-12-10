@@ -11,7 +11,7 @@ from fastapi.responses import ORJSONResponse
 from hashlib import sha512
 from pymongo import MongoClient
 from starlette.responses import FileResponse
-from config import mongo_settings
+from config import mongo_settings, domain
 
 from utils import (ALLOWED_CONTENT_TYPES, check_authorization,
                    http_exception_handler)
@@ -94,7 +94,7 @@ async def post_file(request: Request):
     return ORJSONResponse(
         status_code=201,
         content={
-            "url": f"http://65.173.109.236:8000/api/v1/uploads/{file_id}?key={key.decode()}"},
+            "url": f"http://{domain}/api/v1/uploads/{file_id}?key={key.decode()}"},
     )
 
 
