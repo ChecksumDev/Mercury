@@ -1,18 +1,16 @@
-import glob
-from io import BytesIO
+from hashlib import sha512
 from os import path
 from secrets import token_urlsafe
 
 from aiofiles import open as aioopen
 from cryptography.fernet import Fernet
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.params import Depends, Header
+from fastapi.params import Depends
 from fastapi.responses import ORJSONResponse
-from hashlib import sha512
 from pymongo import MongoClient
 from starlette.responses import FileResponse
-from config import mongo_settings, domain
 
+from config import domain, mongo_settings
 from utils import (ALLOWED_CONTENT_TYPES, check_authorization,
                    http_exception_handler)
 
@@ -94,7 +92,7 @@ async def post_file(request: Request):
     return ORJSONResponse(
         status_code=201,
         content={
-            "url": f"http://{domain}/api/v1/uploads/{file_id}?key={key.decode()}"},
+            "url": f"https://{domain}/api/v1/uploads/{file_id}?key={key.decode()}"},
     )
 
 
