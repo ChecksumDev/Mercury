@@ -34,7 +34,7 @@ async def favicon():
     return FileResponse(path.join("data", "static", "favicon.ico"))
 
 
-@main.post("/api/v1/auth/register", response_model=ORJSONResponse, status_code=201)
+@main.post("/api/v1/auth/register")
 async def register(request: Request):
     """This endpoint registers a new user.
 
