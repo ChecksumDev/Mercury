@@ -4,6 +4,9 @@ from fastapi.responses import JSONResponse
 
 from config import api_key
 
+VALID_USERNAME_REGEX = r"^[a-zA-Z0-9_]{3,20}$"
+VALID_PASSWORD_REGEX = r"^[a-zA-Z0-9_]{6,20}$"
+
 ALLOWED_CONTENT_TYPES = {  # images
     "image/jpeg", "image/png", "image/gif",  # video
     "video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-msvideo", "video/x-ms-wmv", "video/x-flv",
@@ -12,7 +15,6 @@ ALLOWED_CONTENT_TYPES = {  # images
     "text/plain", "text/html", "text/css", "text/javascript", "text/xml", "text/csv", "text/x-markdown",  # zip
     "application/zip",  #
 }
-
 
 async def http_exception_handler(request: Request, exc: HTTPException):
     """This function handles HTTP exceptions
