@@ -133,11 +133,6 @@ async def get_file(request: Request, file_id: str):
         raise HTTPException(
             status_code=404, detail="The file does not exist.", )
 
-    duplicateCheck = database.uploads.find_one({"hash": upload["hash"]})
-    if duplicateCheck:
-        raise HTTPException(
-            status_code=409, detail="The file already exists on the server.", )
-
     key = request.query_params.get("key", None)
 
     if not key:
