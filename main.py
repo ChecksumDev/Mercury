@@ -11,22 +11,16 @@ from pymongo import MongoClient
 from starlette.responses import FileResponse
 
 from config import domain, mongo_settings
-from utils import (ALLOWED_CONTENT_TYPES, check_authorization,
-                   http_exception_handler)
+from utils import (ALLOWED_CONTENT_TYPES, check_authorization, http_exception_handler)
 
 database = MongoClient(
-    f"mongodb+srv://{mongo_settings.get('user')}:{mongo_settings.get('password')}@{mongo_settings.get('host')}/{mongo_settings.get('db')}?retryWrites=true&w=majority").get_database(f'{mongo_settings.get("db")}')
+    f"mongodb+srv://{mongo_settings.get('user')}:{mongo_settings.get('password')}@{mongo_settings.get('host')}/{mongo_settings.get('db')}?retryWrites=true&w=majority").get_database(
+    f'{mongo_settings.get("db")}')
 
 exception_handlers = {HTTPException: http_exception_handler}
 
-main = FastAPI(
-    title="Mercury",
-    openapi_url="/api/v1/openapi.json",
-    docs_url="/docs",
-    redoc_url=None,
-    exception_handlers=exception_handlers,
-    debug=True,
-)
+main = FastAPI(title="Mercury", openapi_url="/api/v1/openapi.json", docs_url="/docs", redoc_url=None,
+               exception_handlers=exception_handlers, debug=True, )
 
 
 @main.get("/favicon.ico")
@@ -60,18 +54,13 @@ async def post_file(request: Request):
     content_type = body["file"].content_type
 
     file = await body["file"].read()
+    size = len(file)
 
     if content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail="The file type is not allowed.",
-        )
+        raise HTTPException(status_code=415, detail="The file type is not allowed.", )
 
-    if len(file) > 1024 * 1024 * 10:  # 10MB
-        raise HTTPException(
-            status_code=413,
-            detail="The file is too large.",
-        )
+    if size > 1024 * 1024 * 500:  # 500 MB
+        raise HTTPException(status_code=413, detail="The file is too large to upload.", )
 
     key = Fernet.generate_key()
     f = Fernet(key)
@@ -79,21 +68,14 @@ async def post_file(request: Request):
 
     file_id = token_urlsafe(32)
 
-    database.uploads.insert_one({
-        "file_id": file_id,
-        "original_name": original_name,
-        "content_type": content_type,
-        "hash": sha512(file).hexdigest(),
-    })
+    database.uploads.insert_one({"file_id": file_id, "original_name": original_name, "content_type": content_type,
+                                 "hash": sha512(file).hexdigest(), "size": size, })
 
     async with aioopen(path.join("data", "uploads", file_id), "wb") as f:
         await f.write(encrypted_file)
 
-    return ORJSONResponse(
-        status_code=201,
-        content={
-            "url": f"https://{domain}/api/v1/uploads/{file_id}?key={key.decode()}"},
-    )
+    return ORJSONResponse(status_code=201,
+                          content={"url": f"https://{domain}/api/v1/uploads/{file_id}?key={key.decode()}"}, )
 
 
 @main.get("/api/v1/uploads/{file_id}")
@@ -101,18 +83,16 @@ async def get_file(request: Request, file_id: str):
     upload = database.uploads.find_one({"file_id": file_id})
 
     if not upload:
-        raise HTTPException(
-            status_code=404,
-            detail="The file does not exist.",
-        )
+        raise HTTPException(status_code=404, detail="The file does not exist.", )
+
+    duplicateCheck = database.uploads.find_one({"hash": upload["hash"]})
+    if duplicateCheck:
+        raise HTTPException(status_code=409, detail="The file already exists on the server.", )
 
     key = request.query_params.get("key", None)
 
     if not key:
-        raise HTTPException(
-            status_code=400,
-            detail="No decryption key was provided.",
-        )
+        raise HTTPException(status_code=400, detail="No decryption key was provided.", )
 
     f = Fernet(key)
     async with aioopen(path.join("data", "uploads", file_id), "rb") as file:
@@ -121,24 +101,12 @@ async def get_file(request: Request, file_id: str):
     try:
         decrypted_file = f.decrypt(encrypted_file)
     except:
-        raise HTTPException(
-            status_code=401,
-            detail="The key is invalid.",
-        )
+        raise HTTPException(status_code=401, detail="The key is invalid.", )
 
     if sha512(decrypted_file).hexdigest() != upload["hash"]:
-        raise HTTPException(
-            status_code=400,
-            detail="The file has either been tampered with or is corrupted.",
-        )
+        raise HTTPException(status_code=400, detail="The file has either been tampered with or is corrupted.", )
 
-    return Response(
-        content=decrypted_file,
-        media_type=upload["content_type"],
-        headers={
-            "Content-Type": upload["content_type"],
-            "Content-Disposition": f"filename={upload['original_name']}",
-            "Content-Length": f"{len(decrypted_file)}",
-            "Cache-Control": "no-cache",
-        },
-    )
+    return Response(content=decrypted_file, media_type=upload["content_type"],
+                    headers={"Content-Type": upload["content_type"],
+                             "Content-Disposition": f"filename={upload['original_name']}",
+                             "Content-Length": f"{len(decrypted_file)}", "Cache-Control": "no-cache", }, )
