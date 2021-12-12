@@ -1,5 +1,5 @@
 from hashlib import sha512
-from os import path
+from os import path, remove
 from secrets import token_urlsafe
 
 from aiofiles import open as aioopen
@@ -11,16 +11,17 @@ from pymongo import MongoClient
 from starlette.responses import FileResponse
 
 from config import domain, mongo_settings
+from objects import glob
 from utils import (ALLOWED_CONTENT_TYPES, VALID_USERNAME_REGEX,
                    check_authorization, http_exception_handler)
 
-database = MongoClient(
-    f"mongodb+srv://{mongo_settings.get('user')}:{mongo_settings.get('password')}@{mongo_settings.get('host')}/{mongo_settings.get('db')}?retryWrites=true&w=majority").get_database(
-    f'{mongo_settings.get("db")}')
+mongo = MongoClient(
+    f"mongodb+srv://{mongo_settings.get('user')}:{mongo_settings.get('password')}@{mongo_settings.get('host')}/{mongo_settings.get('db')}?retryWrites=true&w=majority")
+glob.database = mongo.get_database(f"{mongo_settings.get('db')}")
 
 exception_handlers = {HTTPException: http_exception_handler}
 
-main = FastAPI(title="Mercury", openapi_url="/api/v1/openapi.json", docs_url="/docs", redoc_url=None,
+main = FastAPI(title="Mercury", openapi_url="/api/v1/openapi.json", docs_url="/", redoc_url=None,
                exception_handlers=exception_handlers, debug=True, )
 
 
@@ -44,24 +45,16 @@ async def register(request: Request):
     Returns:
         ORJSONResponse: The response object.
     """
-    if not await check_authorization(request, "POST", "auth/register"):
-        return Response(status_code=401)
 
     data = await request.json()
     if not data:
-        return Response(status_code=400)
+        raise HTTPException(status_code=400, detail="No json data provided.")
 
     if not data.get("username") or not data.get("password"):
         raise HTTPException(
             status_code=400, detail="Username and password are required.")  # 400 Bad Request
 
-    if not VALID_USERNAME_REGEX.match(data.get("username")):
-        raise HTTPException(status_code=400, detail="Username is invalid.")
-
-    if len(data.get("password")) < 8:
-        raise HTTPException(status_code=400, detail="Password is too short.")
-
-    if database.users.find_one({"safe_username": data.get("username").lower()}):
+    if glob.database.users.find_one({"safe_username": data.get("username").lower()}):
         raise HTTPException(
             status_code=400, detail="Username is already taken.")
 
@@ -73,9 +66,8 @@ async def register(request: Request):
         "files": []
     }
 
-    database.users.insert_one(user)
-
-    return ORJSONResponse(user, status_code=201)
+    glob.database.users.insert_one(user)
+    return ORJSONResponse(f"User {user.get('username')} created.", status_code=201)
 
 
 @main.post("/api/v1/upload", dependencies=[Depends(check_authorization)])
@@ -115,19 +107,74 @@ async def post_file(request: Request):
 
     file_id = token_urlsafe(32)
 
-    database.uploads.insert_one({"file_id": file_id, "original_name": original_name, "content_type": content_type,
-                                 "hash": sha512(file).hexdigest(), "size": size, })
+    glob.database.uploads.insert_one({"file_id": file_id, "original_name": original_name, "content_type": content_type,
+                                      "hash": sha512(file).hexdigest(), "size": size, })
 
     async with aioopen(path.join("data", "uploads", file_id), "wb") as f:
         await f.write(encrypted_file)
+
+    glob.database.users.update_one({"token": request.headers.get("Authorization")},
+                                   {"$push": {"files": file_id}})
 
     return ORJSONResponse(status_code=201,
                           content={"url": f"https://{domain}/api/v1/uploads/{file_id}?key={key.decode()}"}, )
 
 
+@main.post("/api/v1/auth/delete")
+async def delete_user(request: Request):
+    """This endpoint deletes a user.
+
+    Args:
+        request (Request): The request object.
+
+    Raises:
+        HTTPException: If the request is not authorized.
+
+    Returns:
+        ORJSONResponse: The response object.
+    """
+
+    token = request.headers.get("Authorization")
+    user = glob.database.users.find_one({"token": token})
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token.")
+
+    files = glob.database.uploads.find({"file_id": {"$in": user.get("files")}})
+    for file in files:
+        glob.database.uploads.delete_one({"file_id": file.get("file_id")})
+        try:
+            remove(path.join("data", "uploads", file.get("file_id")))
+        except:
+            pass
+
+    glob.database.users.delete_one({"token": token})
+
+    return ORJSONResponse("User deleted.", status_code=200)
+
+
 @main.get("/api/v1/uploads/{file_id}")
 async def get_file(request: Request, file_id: str):
-    upload = database.uploads.find_one({"file_id": file_id})
+    """This endpoint is used to view a file.
+
+    Args:
+        request (Request): The request object.
+        file_id (str): The file id.
+
+    Parameters:
+        key (str): The decryption key.
+
+    Raises:
+        HTTPException: If the file does not exist.
+        HTTPException: If the key is not provided.
+        HTTPException: If the key is invalid.
+        HTTPException: If the file is corrupted.
+
+    Returns:
+        Response: The response object. (File)
+    """
+
+    upload = glob.database.uploads.find_one({"file_id": file_id})
 
     if not upload:
         raise HTTPException(
@@ -140,6 +187,7 @@ async def get_file(request: Request, file_id: str):
             status_code=400, detail="No decryption key was provided.", )
 
     f = Fernet(key)
+
     async with aioopen(path.join("data", "uploads", file_id), "rb") as file:
         encrypted_file = await file.read()
 
