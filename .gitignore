@@ -118,5 +118,5 @@ dmypy.json
 .pyre/
 
 # Program related
-/data
+data/
 config.py
