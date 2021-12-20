@@ -1,0 +1,5 @@
+aiofiles==0.6.0
+cryptography==2.8
+fastapi==0.70.1
+pymongo==4.0
+starlette==0.16.0
