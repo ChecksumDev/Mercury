@@ -21,7 +21,6 @@ from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
 from starlette.responses import FileResponse
 
-from config import mongo_settings
 from objects import glob, logger
 from utils import http_exception_handler
 
@@ -29,11 +28,11 @@ glob.logger = logger.Logger()
 glob.logger.info("Starting up...")
 
 mongo = MongoClient(
-    f"mongodb+srv://{mongo_settings.get('user')}:{mongo_settings.get('password')}@{mongo_settings.get('host')}/{mongo_settings.get('db')}?retryWrites=true&w=majority"
+    f"mongodb+srv://{glob.config.mongo_settings.get('user')}:{glob.config.mongo_settings.get('password')}@{glob.config.mongo_settings.get('host')}/{glob.config.mongo_settings.get('db')}?retryWrites=true&w=majority"
 )
 glob.logger.info("Connected to MongoDB.")
 
-glob.database = mongo.get_database(f"{mongo_settings.get('db')}")
+glob.database = mongo.get_database(f"{glob.config.mongo_settings.get('db')}")
 glob.logger.info(f"Using database {glob.database.name}.")
 
 exception_handlers = {HTTPException: http_exception_handler}

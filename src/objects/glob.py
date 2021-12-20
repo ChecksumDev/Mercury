@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import config # for use as glob.config
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

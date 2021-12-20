@@ -25,7 +25,6 @@ from aiofiles import open as aioopen
 from utils import ALLOWED_CONTENT_TYPES
 from hashlib import sha512
 from os import path
-from config import domain
 
 router = APIRouter()
 
@@ -111,9 +110,9 @@ async def post_file(request: Request):
             status_code=201,
             content={
                 "file_url":
-                f"https://{domain}/api/v1/uploads/{file_id}?key={key.decode()}",
+                f"{glob.config.domain}api/v1/uploads/{file_id}?key={key.decode()}",
                 "delete_url":
-                f"https://{domain}/api/v1/uploads/{file_id}?key={key.decode()}&delete_key={delete_key}"
+                f"{glob.config.domain}api/v1/uploads/{file_id}?key={key.decode()}&delete_key={delete_key}"
             })
 
 
