@@ -24,4 +24,3 @@ __all__ = ("database", )
 
 database: 'Database'
 logger: 'logger.Logger'
-max_file_size = 50 * 1024 * 1024
