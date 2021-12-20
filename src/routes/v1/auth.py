@@ -61,6 +61,7 @@ async def register(request: Request):
     safe_user.pop("safe_username")
     safe_user.pop("password")
     safe_user.pop("files")
+    safe_user.pop("priv")
 
     glob.database.users.insert_one(user)
     mkdir(path.join("data", "uploads", user["safe_username"]))
