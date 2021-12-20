@@ -120,3 +120,4 @@ dmypy.json
 # Program related
 data/
 config.py
+.vscode/
