@@ -14,14 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import config # for use as glob.config
+try:
+    import config
+except ModuleNotFoundError as e:
+    print("\033[91m[!] Error: Could not find config.py. Please create one.")
+    
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pymongo.database import Database
     from objects import logger
 
-__all__ = ("database", )
+__all__ = ("database", "logger", "config")
 
 database: 'Database'
 logger: 'logger.Logger'
