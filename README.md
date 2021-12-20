@@ -18,7 +18,43 @@ This is a work in progress.
 
 ## Installation
 
-Coming soon!
+**⚠️ The following installation steps have not been fully tested, and should be treated with caution...**
+
+The following installation steps are crafted for Ubuntu 20.04 LTS.
+
+```bash
+# Install Python3.10
+sudo apt-add-repository ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt-get install python3.10 python3.10-distutils
+
+# Install pip
+curl https://bootstrap.pypa.io/get-pip.py | sudo python3.10
+
+# Create a user for Mercury that we can switch to later
+sudo adduser mercury
+su - mercury # Switch to the new user
+
+# Clone the repository
+git clone https://github.com/ChecksumDev/Mercury.git /home/mercury/server
+cd /home/mercury/server
+
+# Install dependencies
+python3.10 -m pip install -r requirements.txt
+
+# Configure mercury
+cp ext/config.py.example src/config.py
+nano src/config.py # Edit the config file
+
+# Return to the original user
+exit
+
+# Daemonize the server using systemd
+sudo cp ext/mercury.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable mercury
+sudo systemctl start mercury
+```
 
 ## Contributing
 
