@@ -18,6 +18,7 @@ try:
     import config
 except ModuleNotFoundError as e:
     print("\033[91m[!] Error: Could not find config.py. Please create one.")
+    exit(0)
     
 from typing import TYPE_CHECKING
 
