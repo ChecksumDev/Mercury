@@ -58,7 +58,7 @@ async def post_file(request: Request):
             detail="The file type is not allowed.",
         )
 
-    if size > glob.max_file_size:
+    if size > glob.config.max_file_size:
         raise HTTPException(
             status_code=413,
             detail="The file is too large.",
