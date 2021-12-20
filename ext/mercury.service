@@ -1,0 +1,13 @@
+[Unit]
+Description=Mercury
+After=network.target
+
+[Service]
+User=mercury
+Group=mercury
+WorkingDirectory=/home/mercury/server/src
+ExecStart=/usr/bin/python3.10 -m uvicorn main:main
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
