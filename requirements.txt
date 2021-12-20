@@ -1,5 +1,5 @@
 aiofiles==0.6.0
-cryptography==2.8
+cryptography==3.3.2
 fastapi==0.70.1
 pymongo==4.0
 starlette==0.16.0
