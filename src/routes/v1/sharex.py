@@ -216,8 +216,9 @@ async def get_file(request: Request, file_id: str):
         )
 
     glob.logger.info(
-        f"{request.client.host} viewed {upload['original_name']} ({upload['size'] * 1.0 / 1024 / 1024:.2f} MB)."
+        f"{request.client.host} viewed {upload['original_name']} ({upload['size'] * 1.0 / 1024 / 1024:.2f} MB) from {user['safe_username']}."
     )
+
     return Response(
         content=decrypted_file,
         media_type=upload["content_type"],
