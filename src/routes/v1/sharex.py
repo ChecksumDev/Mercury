@@ -79,9 +79,7 @@ async def post_file(request: Request):
         )
 
     try:
-        async with aioopen(
-                path.join("data", "uploads", user["safe_username"],
-                          file_id + ".hg"), "wb") as f:
+        async with aioopen(path.join("data", "uploads", user["safe_username"], f'{file_id}.hg'), "wb") as f:
             await f.write(encrypted_file)
     except Exception as e:
         raise HTTPException(
@@ -181,9 +179,7 @@ async def get_file(request: Request, file_id: str):
 
     try:
         f = Fernet(key)
-        async with aioopen(
-                path.join("data", "uploads", user["safe_username"],
-                          file_id + ".hg"), "rb") as file:
+        async with aioopen(path.join("data", "uploads", user["safe_username"], f'{file_id}.hg'), "rb") as file:
             encrypted_file = await file.read()
     except FileNotFoundError:
         return FileResponse(
