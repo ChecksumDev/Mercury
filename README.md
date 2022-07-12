@@ -1,3 +1,8 @@
+> # Deprecated! ⚠️
+> Mercury has been deprecated in favor of [Magnesium Oxide](https://github.com/magnesium-uploader/magnesium-oxide), its successor! 
+> 
+> No support will be given here and we **highly encourage** you to check out Magnesium Oxide!
+
 # Mercury
 
 A lightning fast private ShareX uploader coded in Python using FastAPI.
