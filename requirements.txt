@@ -1,7 +1,7 @@
 aiofiles==0.6.0
 cryptography==3.3.2
 fastapi==0.70.1
-pymongo==4.0
+pymongo==4.6.3
 starlette==0.16.0
 uvicorn==0.16.0
 asgiref==3.4.1
